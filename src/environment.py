@@ -1,8 +1,6 @@
 from typing import List, Tuple, Dict
-import numpy as np
 from dataclasses import dataclass
 from enum import Enum
-
 
 class Duration(Enum):
     SIXTEENTH = 0.25  # 1/4 beat
@@ -10,7 +8,6 @@ class Duration(Enum):
     QUARTER = 1.0     # 1 beat
     HALF = 2.0        # 2 beats
     WHOLE = 4.0       # 4 beats
-
 
 @dataclass
 class Note:
@@ -20,37 +17,35 @@ class Note:
     def __str__(self):
         return f"{self.pitch}_{self.duration.name}"
 
-
 class MusicEnvironment:
     def __init__(self):
         # Notes in C major scale: C4 to C5
-        self.pitches = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+        self.notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
         self.durations = list(Duration)
         
-        self.n_actions = len(self.pitches) * len(self.durations)
+        self.n_actions = len(self.notes) * len(self.durations)
         
         self.action_to_note = {}
         self.note_to_action = {}
         idx = 0
-
-        for pitch in self.pitches:
+        for note in self.notes:
             for duration in self.durations:
-                note = Note(pitch, duration)
-                self.action_to_note[idx] = note
-                self.note_to_action[str(note)] = idx
+                note_obj = Note(note, duration)
+                self.action_to_note[idx] = note_obj
+                self.note_to_action[str(note_obj)] = idx
                 idx += 1
         
         self.beats_per_measure = 4
-        self.measures_per_phrase = 2
-        self.num_phrases = 4
+        self.measures_per_phrase = 4    
+        self.num_phrases = 8     
         self.total_beats = self.beats_per_measure * self.measures_per_phrase * self.num_phrases
         
         self.current_beat = 0.0
         self.current_measure = 0
         self.current_phrase = 0
-        self.state = [Note('START', Duration.QUARTER)] * 3  # Last 3 notes
-        self.measure_notes = []  # Notes in current measure
-        self.phrase_notes = []   # Notes in current phrase
+        self.state = [Note('START', Duration.QUARTER)] * 3
+        self.measure_notes = []
+        self.phrase_notes = []
         
         # Common rhythm patterns
         self.rhythm_patterns = {
@@ -80,25 +75,27 @@ class MusicEnvironment:
         if self._is_valid_duration(note.duration):
             reward += 1
         else:
-            reward -= 5 
+            reward -= 5
             
         # Reward for rhythmic variety within measure
         if self.measure_notes:
             last_duration = self.measure_notes[-1].duration
+
             if note.duration != last_duration:
                 reward += 0.5
                 
         # Reward for common rhythmic patterns
         measure_durations = [n.duration for n in self.measure_notes] + [note.duration]
+
         for pattern in self.rhythm_patterns.values():
             if len(measure_durations) >= len(pattern):
                 if measure_durations[-len(pattern):] == pattern:
-                    reward += 2
+                    reward += 2 
         
         # Reward for proper phrase endings
         if self._is_phrase_complete():
             if note.duration in [Duration.HALF, Duration.WHOLE]:
-                reward += 2
+                reward += 2  
         
         return reward
     
@@ -112,30 +109,25 @@ class MusicEnvironment:
             prev_midi = self._note_to_midi(self.state[-1].pitch)
             
             interval = abs(current_midi - prev_midi)
-
-            # Reward for stepwise motion with shorter notes
             if interval <= 2 and note.duration in [Duration.EIGHTH, Duration.SIXTEENTH]:
                 reward += 1
             
-            # Reward for wider intervals with longer notes
             if interval >= 4 and note.duration in [Duration.HALF, Duration.WHOLE]:
                 reward += 1
         
-        # Negative reward for excessive repetition
         if len(self.phrase_notes) >= 2:
             if note.pitch == self.phrase_notes[-1].pitch == self.phrase_notes[-2].pitch:
                 reward -= 2
         
         return reward
     
-    
+
     def _calculate_reward(self, note: Note) -> float:
         rhythm_reward = self._calculate_rhythm_reward(note)
         melodic_reward = self._calculate_melodic_reward(note)
         
         reward = rhythm_reward + melodic_reward
         
-        # Reward for ending piece properly
         if self.current_beat >= self.total_beats - self.beats_per_measure:
             if note.pitch == 'C4' and note.duration == Duration.WHOLE:
                 reward += 5
@@ -153,7 +145,7 @@ class MusicEnvironment:
 
         return base_notes[note_name] + (octave - 4) * 12
     
-
+    
     def reset(self) -> str:
         self.current_beat = 0.0
         self.current_measure = 0
@@ -171,15 +163,13 @@ class MusicEnvironment:
         reward = self._calculate_reward(note)
         
         self.current_beat += note.duration.value
-
         if self._is_measure_complete():
             self.current_measure += 1
             self.measure_notes = []
-
         if self._is_phrase_complete():
             self.current_phrase += 1
             self.phrase_notes = []
-        
+
         self.state = self.state[1:] + [note]
         self.measure_notes.append(note)
         self.phrase_notes.append(note)
@@ -188,5 +178,6 @@ class MusicEnvironment:
         
         return str(self.state), reward, done, {
             'current_beat': self.current_beat,
-            'current_measure': self.current_measure
+            'current_measure': self.current_measure,
+            'measure_complete': self._is_measure_complete()
         }
