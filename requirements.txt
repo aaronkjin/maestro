@@ -3,4 +3,5 @@ pytest>=7.0.0
 jupyter>=1.0.0
 matplotlib>=3.4.0
 midiutil>=1.2.1
+mido>=1.2.10
 pygame>=2.1.0
