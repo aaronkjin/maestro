@@ -117,8 +117,8 @@ class MusicEnvironment:
         
         if len(self.phrase_notes) >= 2:
             if note.pitch == self.phrase_notes[-1].pitch == self.phrase_notes[-2].pitch:
-                reward -= 2
-        
+                reward -= 8
+                
         return reward
     
 

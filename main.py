@@ -26,7 +26,7 @@ def main():
     agent = QLearningAgent(n_actions=env.n_actions)
     
     print("Training agent...")
-    rewards = train_agent(env, agent, n_episodes=20000)
+    rewards = train_agent(env, agent, n_episodes=100)
     plot_rewards(rewards)
     
     print("\nGenerating melody...")
