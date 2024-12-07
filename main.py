@@ -25,17 +25,15 @@ def main():
     env = MusicEnvironment()
     agent = QLearningAgent(n_actions=env.n_actions)
     
-    print("Training agent...")
+    # Train agent
     rewards = train_agent(env, agent, n_episodes=100)
     plot_rewards(rewards)
     
-    print("\nGenerating melody...")
+    # Generate melody
     melody = generate_melody(env, agent)
-    
-    print("\nComplete Melody:")
     print(format_melody_for_display(melody))
     
-    print("\nRhythm pattern by phrase:")
+    # Rhythm pattern for phrase
     for i in range(env.num_phrases):
         start_idx = i * (env.measures_per_phrase * env.beats_per_measure)
         end_idx = start_idx + (env.measures_per_phrase * env.beats_per_measure)
@@ -50,7 +48,7 @@ def main():
     analysis = analyze_melody(melody)
     print_melody_analysis(analysis)
     
-    print("\nPhrase Analysis:")
+    # Phrase analysis
     for i in range(env.num_phrases):
         start_idx = i * (env.measures_per_phrase * env.beats_per_measure)
         end_idx = start_idx + (env.measures_per_phrase * env.beats_per_measure)
